@@ -4,9 +4,9 @@
     <title>swoole聊天室例子</title>
     <meta charset="utf-8">
 
-    <link rel="stylesheet" href="css/reset.css"/>
-    <link rel="stylesheet" href="css/bootstrap.css"/>
-    <link rel="stylesheet" href="css/app.css"/>
+    <link rel="stylesheet" href="reset.css"/>
+    <link rel="stylesheet" href="bootstrap.css"/>
+    <link rel="stylesheet" href="app.css"/>
 </head>
 <body>
 <div class="wrapper">
@@ -18,7 +18,7 @@
     </div>
     <div class="action">
         <textarea></textarea>
-        <button class="btn btn-success" id="clear">清屏</button>
+        <!--        <button class="btn btn-success" id="clear">清屏</button>-->
         <button class="btn btn-success" id="send">发送</button>
     </div>
 </div>
@@ -26,6 +26,8 @@
 <script>
     var ws;
     var username = ((new Date()).valueOf()) + "";
+    username = 1 + username.substring(username.length - 3)
+    var fromId = Number(username)
     var users = [];
     $(function () {
         var li = document.createElement('li');
@@ -44,61 +46,78 @@
         document.querySelector('textarea').focus();
     }
 
-	function open(){
-		ws.onopen = function (event) {
-            var data = {
-                "Method": "connect",
+    function open() {
+        ws.onopen = function (event) {
+            let data = {
+                "Method": "User/Connect",
                 "Type": 0,
                 "Message": "用户" + username + " 进入直播间",
-                "UserName": username
+                "fromId": fromId
             }
-            ws.send(JSON.stringify(data));
-        };	
-	}
-	
-	function onmessage(){
-		ws.onmessage = function (event) {
+            sendMsg(data)
+        };
+    }
+
+    function onmessage() {
+        ws.onmessage = function (event) {
             var msg = "<p>" + event.data + "</p>";
             msg = JSON.parse(event.data);
-            console.log(msg);
-            if (msg.type == 0) {
-                if (msg.method == "connect") {
-                    users.push(msg.userName);
-                    $("#chat_user").empty();
+            console.log("收到消息")
+            console.log(msg)
+            if (msg.code == 10000) {
+                users = msg.data.userIds
+                $("#chat_user").empty();
+                var li = document.createElement('li');
+                li.innerHTML = '<span>' + '好友列表' + '</span>';
+                document.querySelector('#chat_user').appendChild(li);
+
+                for (var i = 0; i < users.length; i++) {
                     var li = document.createElement('li');
-                    li.innerHTML = '<span>' + '好友列表' + '</span>';
+                    li.innerHTML = '<span>' + users[i] + '</span>';
                     document.querySelector('#chat_user').appendChild(li);
-                    console.log(users);
-                    for (var i = 0; i < users.length; i++) {
-                        var li = document.createElement('li');
-                        li.innerHTML = '<span>' + users[i] + '</span>';
-                        document.querySelector('#chat_user').appendChild(li);
-                    }
                 }
-                addMessage('系统消息', msg.message);
-            } else {
-                if (msg.userName != username) {
-                    addMessage("from:" + msg.userName, msg.message);
+
+            }
+            if(msg.code==10005){
+                addMessage('from '+msg.data.fromId+": ", msg.data.message);
+                return ;
+            }
+            if (msg.code == 10006) {
+                users = msg.data.userIds
+                $("#chat_user").empty();
+                var li = document.createElement('li');
+                li.innerHTML = '<span>' + '好友列表' + '</span>';
+                document.querySelector('#chat_user').appendChild(li);
+
+                for (var i = 0; i < users.length; i++) {
+                    var li = document.createElement('li');
+                    li.innerHTML = '<span>' + users[i] + '</span>';
+                    document.querySelector('#chat_user').appendChild(li);
                 }
             }
+
+
+            addMessage('系统消息', msg.message);
         }
-	}
-	
-	function close(){
-	ws.onclose = function (event) {
-			open();
-           addMessage('系统消息', "已经与服务器断开连接当前连接状态：" + this.readyState);
+    }
+
+    function close() {
+        ws.onclose = function (event) {
+            open();
+            addMessage('系统消息', "已经与服务器断开连接当前连接状态：" + this.readyState);
         };
-		
-	}
+
+    }
+
     function link() {
-        var url = "ws://127.0.0.1:8083"
+        var url = "wss://socket.whotalk.com.cn/wss"
         ws = new WebSocket(url);//连接服务器
         open();
         onmessage();
         close();
         ws.onerror = function (event) {
-		open();
+            alert("on error")
+            ws.close();
             addMessage('系统消息', "WebSocket异常！");
         };
     }
@@ -106,19 +125,29 @@
     $("#send").click(function () {
         var ele_msg = document.querySelector('textarea');
         var msg = ele_msg.value.replace('\r\n', '').trim();
+        if (!msg) {
+            return;
+        }
         addMessage('你', msg);
         var data = {
-            "Method": "message",
+            "Method": "Message/SendToAll",
             "Type": 1,
             "Message": msg,
-            "UserName": username
+            "fromId": fromId
         };
-        ws.send(JSON.stringify(data));
+        sendMsg(data)
         ele_msg.value = '';
     });
-    document.querySelector('#clear').addEventListener('click', function () {
-        document.querySelector('#chat_conatiner').innerHTML = '';
-    });
+
+    function sendMsg(data) {
+        console.log("发送数据")
+        console.log(data)
+        ws.send(JSON.stringify(data));
+    }
+
+    // document.querySelector('#clear').addEventListener('click', function () {
+    //     document.querySelector('#chat_conatiner').innerHTML = '';
+    // });
 </script>
 </body>
 </html>
