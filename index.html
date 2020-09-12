@@ -103,7 +103,7 @@
 
     function close() {
         ws.onclose = function (event) {
-            open();
+            location.reload()
             addMessage('系统消息', "已经与服务器断开连接当前连接状态：" + this.readyState);
         };
 
@@ -111,6 +111,8 @@
 
     function link() {
         var url = "wss://socket.whotalk.com.cn/wss"
+        // var url="ws://127.0.0.1:3000"
+        // var url="ws://47.115.162.101:3000"
         ws = new WebSocket(url);//连接服务器
         open();
         onmessage();
