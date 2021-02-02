@@ -52,7 +52,7 @@
                 "Method": "User/Connect",
                 "Type": 0,
                 "Message": "用户" + username + " 进入直播间",
-                "fromId": fromId
+                "fromUserId": "1c2"
             }
             sendMsg(data)
         };
@@ -110,8 +110,8 @@
     }
 
     function link() {
-        var url = "wss://socket.whotalk.com.cn/wss"
-        // var url="ws://127.0.0.1:3000"
+        //var url = "wss://socket.whotalk.com.cn/wss"
+         var url="ws://127.0.0.1:3000/wss"
         // var url="ws://47.115.162.101:3000"
         ws = new WebSocket(url);//连接服务器
         open();
@@ -135,7 +135,7 @@
             "Method": "Message/SendToAll",
             "Type": 1,
             "Message": msg,
-            "fromId": fromId
+            "fromUserId": fromId
         };
         sendMsg(data)
         ele_msg.value = '';
